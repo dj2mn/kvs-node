@@ -1,0 +1,45 @@
+---
+# Tasks to configure Desktop settings to make it look nice
+# TODO: custom boot splash screen
+
+- name: Install multimedia packages
+  apt:
+    name: "{{ packages }}"
+    state: latest
+# could add "an only when this Pi is grunty enough" to that..
+
+- name: Copy LXDE panel settings
+  copy:
+    src: files/lxde-panel 
+    dest: /home/pi/.config/lxpanel/LXDE-pi/panels/panel
+
+- name: Copy desktop wallpaper image
+  copy:
+    src: files/rpi_wallpaper.png
+    dest: /home/pi/Pictures/wallpaper.png
+    owner: pi
+    group: pi
+    mode: 0644
+- name: Configure desktop wallpaper
+  lineinfile:
+    path: /home/pi/.config/pcmanfm/LXDE-pi/desktop-items-0.conf
+    regexp: '^wallpaper='
+    line: 'wallpaper=/home/pi/Pictures/wallpaper.png'
+- name: Hide desktop Trash icon
+  lineinfile:
+    path: /home/pi/.config/pcmanfm/LXDE-pi/desktop-items-0.conf
+    regexp: '^show_trash='
+    line: 'show_trash=0'
+
+# The double reference to PApplet_name is because of the processing sketchbook convention of putting the app/script inside a folder of the same name
+- name: Create processing launch script
+  shell: | 
+     echo "{{ PApplet_path }}{{ PApplet_name }}/{{ PApplet_name }} >> {{ PApplet_path }}{{PApplet_name}}/{{ PApplet_name }}.log 2>&1" > {{ PApplet_launch_script_path }}{{ PApplet_launch_script_name }}
+     chmod 755 {{ PApplet_launch_script_path }}{{ PApplet_launch_script_name }}
+     chown pi:pi {{ PApplet_launch_script_path }}{{ PApplet_launch_script_name }}
+     
+- name: Set lxsession autostart to run launch script
+  lineinfile: 
+    state: present
+    path: /home/pi/.config/lxsession/LXDE-pi/autostart
+    line: "{{ PApplet_launch_script_path }}{{ PApplet_launch_script_name }}"
